@@ -883,12 +883,13 @@ erwork --depend=.\objects\startup_stm32f407xx.d -o.\objects\startup_stm32f407xx
 .o -IC:\Users\TEMP.GEII2.001\Documents\2021_STM32F4_base_etudiants\RTE -IC:\Use
 rs\TEMP.GEII2.001\Documents\2021_STM32F4_base_etudiants\RTE\Device\STM32F407VGT
 x -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.6.0\CMSIS\Core\Include -IC:\Keil_v5\ARM\PAC
-K\ARM\CMSIS\5.6.0\CMSIS\Driver\Include -IC:\Keil_v5\ARM\PACK\Keil\MDK-Middlewar
-e\7.0.0\Board -IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Dev
-ice\ST\STM32F4xx\Include -IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Driver
-s\STM32F4xx_HAL_Driver\Inc --predefine="__UVISION_VERSION SETA 517" --predefine
-="_RTE_ SETA 1" --predefine="STM32F407xx SETA 1" --list=.\listings\startup_stm3
-2f407xx.lst RTE\Device\STM32F407VGTx\startup_stm32f407xx.s
+K\ARM\CMSIS\5.6.0\CMSIS\Driver\Include -IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.6.0\CM
+SIS\RTOS\RTX\INC -IC:\Keil_v5\ARM\PACK\Keil\MDK-Middleware\7.0.0\Board -IC:\Kei
+l_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\CMSIS\Device\ST\STM32F4xx\Inclu
+de -IC:\Keil_v5\ARM\PACK\Keil\STM32F4xx_DFP\2.15.0\Drivers\STM32F4xx_HAL_Driver
+\Inc --predefine="__RTX SETA 1" --predefine="__UVISION_VERSION SETA 517" --pred
+efine="_RTE_ SETA 1" --predefine="STM32F407xx SETA 1" --list=.\listings\startup
+_stm32f407xx.lst RTE\Device\STM32F407VGTx\startup_stm32f407xx.s
 
 
 
@@ -1992,4 +1993,4 @@ Symbol: __use_two_region_memory
       None
 Comment: __use_two_region_memory unused
 3 symbols
-448 symbols in table
+449 symbols in table

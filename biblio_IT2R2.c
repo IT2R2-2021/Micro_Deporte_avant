@@ -15,7 +15,7 @@ extern		ARM_DRIVER_USART				Driver_USART1;
 
 //Table des IDs CAN
 
-		#define ID_CAN_LIGHT 0x0F8
+		#define ID_LIGHT 0x0F8
 		
 /*
 Fonction : Permet d'initialisé le CAN 2 comme CAN de transmition

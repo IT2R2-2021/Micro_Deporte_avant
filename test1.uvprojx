@@ -426,11 +426,6 @@
               <FileType>1</FileType>
               <FilePath>.\biblio_IT2R2.c</FilePath>
             </File>
-            <File>
-              <FileName>Gestion_phare.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Gestion_phare.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>

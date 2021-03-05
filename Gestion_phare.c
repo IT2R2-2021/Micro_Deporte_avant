@@ -6,12 +6,10 @@ Contributeur :
 	Matthieu / Conghui
 */
 
-#define osObjectsPublic                 // define objects in main module
-#include "osObjects.h"                  // RTOS object definitions
-#include "stm32f4xx_hal.h"							// Startup	
+#include "stm32f4xx_hal.h"
 #include "Board_LED.h"                  // ::Board Support:LED
 #include "Driver_CAN.h"                 // ::CMSIS Driver:CAN
-#include "biblo_IT2R2.h"								// Bibliothèque Réseau	
+#include "biblo_IT2R2.h"
 
 //Variable Global Phare
 ADC_HandleTypeDef myADC2Handle;
@@ -74,5 +72,4 @@ void gestion_phare()
 	etat_lumiere[0]=(char)ADC_Value;
 	etat_lumiere[1]=etat_led;
 	send_CAN_DATA(ID_CAN_LIGHT,&etat_lumiere,2);
-	osDelay(1000)
 }

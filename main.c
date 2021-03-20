@@ -54,6 +54,8 @@
 //Variable Global Phare
 ADC_HandleTypeDef myADC2Handle;
 char etat_lumiere[2];
+char tab_Ruban_led[60*4+4+4];
+
 extern		ARM_DRIVER_CAN        	Driver_CAN2;
 extern 		ARM_DRIVER_SPI        	Driver_SPI1;
 #define ID_CAN_LIGHT 0x0F8
@@ -102,7 +104,7 @@ void init_SPI();
 void init_PIN_PA0_ALS();
 void gestion_phare();
 void Ruban_LED (void const *argument);                             // thread function
-
+void switch_ruban_led(char etat);
 
 //OS des phares
 osThreadId ID_gestion_phare;
@@ -142,16 +144,11 @@ int main(void)
   SystemClock_Config();
   SystemCoreClockUpdate();
 
-  /* Add your application code here
-     */
 	//Initialisation pour les phares
 	init_PIN_PA0_ALS(); 	
 	LED_Initialize();
 	init_SPI();
-	
-	//Liaison CAN
-//	init_CAN_Transmiter();
-	
+		
   /* Initialize CMSIS-RTOS2 */
   osKernelInitialize ();
 
@@ -316,6 +313,7 @@ __HAL_RCC_ADC2_CLK_ENABLE(); // activation Horloge ADC2
 void gestion_phare()
 {
 	char etat_led;
+	uint32_t event;
 	while (1)
 	{
 		LED_On(2);
@@ -330,17 +328,21 @@ void gestion_phare()
 		if (ADC_Value<140)
 		{
 			LED_On(1);
+			switch_ruban_led(0x01);
 			etat_led=0xFF;
 		}
 		if (ADC_Value>180)
 		{
 			LED_Off(1);
+			switch_ruban_led(0x00);
 			etat_led=0x00;
 		}		
 		osDelay(1000);
 	}
 }
-oid init_SPI(void){
+
+void init_SPI(void)
+	{
 	Driver_SPI1.Initialize(Ruban_LED_callback);
 	Driver_SPI1.PowerControl(ARM_POWER_FULL);
 	Driver_SPI1.Control(ARM_SPI_MODE_MASTER | 
@@ -354,39 +356,66 @@ oid init_SPI(void){
 
 void Ruban_LED (void const *argument) {
 	osEvent evt;
-	char tab[22+16];
-	int i, nb_led;
-	
-	for (i=0;i<4;i++){
-		tab[i] = 0;
-	}
-	
-	// 4 LED bleues
-		for (nb_led = 0; nb_led <4;nb_led++){
-			tab[4+nb_led*4]=0xff;
-			tab[5+nb_led*4]=0xff;
-			tab[6+nb_led*4]=0x00;
-			tab[7+nb_led*4]=0x00;
-			}
-
-		// 4 LED rouges
-		for (nb_led = 0; nb_led <4;nb_led++){
-			tab[20+nb_led*4]=0xff;
-			tab[21+nb_led*4]=0x00;
-			tab[22+nb_led*4]=0x00;
-			tab[23+nb_led*4]=0xff;
-			}
-	
-		// end
-		tab[36] = 0;
-		tab[37] = 0;
-		
-	
-  while (1) {
-		
-		Driver_SPI1.Send(tab,38);
+  while (1)
+	{
+		Driver_SPI1.Send(tab_Ruban_led,60*4+4+4);
 		evt = osSignalWait(0x01, osWaitForever);	// sommeil fin emission
-		
-		osDelay(1000);
   }
+}
+void switch_ruban_led(char etat)
+{
+	int i, nb_led;
+	switch (etat)
+	{
+		case 0x01:
+			
+			//début de trame 0x00 00 00 00
+			for (i=0;i<4;i++) tab_Ruban_led[i] = 0;
+			
+			// 20 LED bleues
+				for (nb_led = 0; nb_led <20;nb_led++)
+				{
+					tab_Ruban_led[4+nb_led*4]=0xff; //0xFF
+					tab_Ruban_led[5+nb_led*4]=0xff;	//BLUE
+					tab_Ruban_led[6+nb_led*4]=0x00;	//GREEN
+					tab_Ruban_led[7+nb_led*4]=0x00;	//RED
+				}
+
+				// 20 LED Blanc
+				for (nb_led = 20; nb_led <40;nb_led++)
+				{
+					tab_Ruban_led[4+nb_led*4]=0xff; //0xFF
+					tab_Ruban_led[5+nb_led*4]=0xff;	//BLUE
+					tab_Ruban_led[6+nb_led*4]=0xff;	//GREEN
+					tab_Ruban_led[7+nb_led*4]=0xff;	//RED
+				}
+				// 20 LED rouges
+				for (nb_led = 40; nb_led <60;nb_led++)
+				{
+					tab_Ruban_led[4+nb_led*4]=0xff; //0xFF
+					tab_Ruban_led[5+nb_led*4]=0x00;	//BLUE
+					tab_Ruban_led[6+nb_led*4]=0x00;	//GREEN
+					tab_Ruban_led[7+nb_led*4]=0xff;	//RED
+				}
+			
+				// end
+			for (i=243;i<248;i++) tab_Ruban_led[i] = 0;
+		break;
+				
+		case 0x00:
+			//début de trame 0x00 00 00 00
+			for (i=0;i<4;i++) tab_Ruban_led[i] = 0;
+			// 60 LED éteinte
+				for (nb_led = 0; nb_led <60;nb_led++)
+				{
+					tab_Ruban_led[4+nb_led*4]=0xff; //0xFF
+					tab_Ruban_led[5+nb_led*4]=0x00;	//BLUE
+					tab_Ruban_led[6+nb_led*4]=0x00;	//GREEN
+					tab_Ruban_led[7+nb_led*4]=0x00;	//RED
+				}
+				// end
+				for (i=243;i<248;i++) tab_Ruban_led[i] = 0;
+			break;
+
+	}
 }

@@ -5,6 +5,9 @@
 #include "cmsis_os.h"                   // ARM::CMSIS:RTOS:Keil RTX
 #include "Driver_SPI.h"                 // ::CMSIS Driver:SPI
 #include "Gestion_lumiere.h"
+#include "Gestion_CAN.h"
+#include "stdio.h"
+
 
 #ifdef _RTE_
 #include "RTE_Components.h"             // Component selection
@@ -39,8 +42,11 @@ uint32_t HAL_GetTick (void) {
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 
+//Gestion CAN
+extern ARM_DRIVER_CAN Driver_CAN2;
+
 //Variable Global Phare
-char etat_lumiere[2];
+uint8_t etat_lumiere[2]={0xAA,0x55};
 extern ARM_DRIVER_SPI Driver_SPI1;
 extern char tab_Ruban_led[60*4+4+4];
 extern ADC_HandleTypeDef myADC2Handle;
@@ -48,7 +54,15 @@ extern ADC_HandleTypeDef myADC2Handle;
 //OS des phares
 void Thread_gestion_phare();
 osThreadId ID_gestion_phare;
-osThreadDef(Thread_gestion_phare, osPriorityNormal,1,0);		// Phare : Priorité Basse
+osThreadDef(Thread_gestion_phare, osPriorityNormal,1,0);
+
+//OS du CAN
+void Thread_CAN_Transmiter();
+void Thread_CAN_Receiver();
+osThreadId ID_CAN_Transmiter;
+osThreadId ID_CAN_Receiver ;
+osThreadDef(Thread_CAN_Transmiter, osPriorityNormal,1,0);
+osThreadDef(Thread_CAN_Receiver, osPriorityNormal,1,0);
 
 int main(void)
 {
@@ -56,16 +70,24 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
   SystemCoreClockUpdate();
-
+	
 	//Initialisation pour les phares
 	init_PIN_PA0_ALS(); 	
 	LED_Initialize();
 	init_SPI();
+
+	//Init CAN
+	init_CAN();
+	
 		
   /* Initialize CMSIS-RTOS2 */
   osKernelInitialize ();
-	ID_gestion_phare = osThreadCreate(osThread (Thread_gestion_phare),NULL);
-  osKernelStart();
+	
+//	ID_gestion_phare 	= osThreadCreate(osThread (Thread_gestion_phare)	,NULL);
+	ID_CAN_Transmiter = osThreadCreate(osThread (Thread_CAN_Transmiter)	,NULL);
+//	ID_CAN_Receiver 	= osThreadCreate(osThread (Thread_CAN_Receiver)		,NULL);
+  
+	osKernelStart();
 }
 
 /**
@@ -177,7 +199,6 @@ void assert_failed(uint8_t* file, uint32_t line)
 //thread de gestion automatique des phares
 void Thread_gestion_phare()
 {
-	char etat_led;
 	osEvent evt;
 	uint32_t  ADC_Value;
 	while (1)
@@ -194,16 +215,56 @@ void Thread_gestion_phare()
 		{
 			LED_On(1);
 			switch_ruban_led(0x01);
-			etat_led=0xFF;
+			etat_lumiere[0]=0xFF;
 		}
 		if (ADC_Value>180)
 		{
 			LED_Off(1);
 			switch_ruban_led(0x00);
-			etat_led=0x00;
+			etat_lumiere[0]=0x00;
 		}
+		etat_lumiere[1]=(uint8_t)ADC_Value;
 		Driver_SPI1.Send(tab_Ruban_led,60*4+4+4);
 		evt = osSignalWait(0x01, osWaitForever);	// sommeil fin emission
 		osDelay(1000);
+	}
+}
+
+void Thread_CAN_Transmiter()
+{
+		ARM_CAN_MSG_INFO tx_msg_info;
+		
+		while (1)
+		{
+			tx_msg_info.id=ARM_CAN_STANDARD_ID(0x111);		//ID=246
+			tx_msg_info.rtr=0;
+			etat_lumiere[0]+=1;
+			etat_lumiere[1]+=1;
+			LED_On(3);
+			Driver_CAN2.MessageSend(2,&tx_msg_info,etat_lumiere,2); //envoie 2 donnée
+			osSignalWait(0x01, osWaitForever);		// sommeil en attente fin emission
+			osDelay(100);
+		}		
+}
+
+void Thread_CAN_Receiver()
+{
+	ARM_CAN_MSG_INFO   rx_msg_info;
+	uint8_t data_buf[2];
+	int identifiant;
+	char taille;
+	
+	while(1)
+	{		
+		osSignalWait(0x01, osWaitForever);		// sommeil en attente réception
+		
+		Driver_CAN2.MessageRead(0,&rx_msg_info, data_buf,2); //reçoit 1 donnée
+		identifiant = rx_msg_info.id;
+		taille=rx_msg_info.dlc;	
+		LED_On(2);
+		osDelay(1000);
+		LED_Off(2);
+		osDelay(1000);
+
 	}
 }

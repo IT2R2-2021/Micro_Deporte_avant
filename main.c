@@ -43,11 +43,10 @@ static void SystemClock_Config(void);
 static void Error_Handler(void);
 
 //Gestion CAN
-extern ARM_DRIVER_CAN Driver_CAN1;
 extern ARM_DRIVER_CAN Driver_CAN2;
 
 //Variable Global Phare
-uint8_t etat_lumiere[2];
+uint8_t etat_lumiere[2]={0xAA,0x55};
 extern ARM_DRIVER_SPI Driver_SPI1;
 extern char tab_Ruban_led[60*4+4+4];
 extern ADC_HandleTypeDef myADC2Handle;
@@ -78,14 +77,13 @@ int main(void)
 	init_SPI();
 
 	//Init CAN
-//	init_CAN_Receiver();
-	init_CAN_Transmiter();
+	init_CAN();
 	
 		
   /* Initialize CMSIS-RTOS2 */
   osKernelInitialize ();
 	
-	ID_gestion_phare 	= osThreadCreate(osThread (Thread_gestion_phare)	,NULL);
+//	ID_gestion_phare 	= osThreadCreate(osThread (Thread_gestion_phare)	,NULL);
 	ID_CAN_Transmiter = osThreadCreate(osThread (Thread_CAN_Transmiter)	,NULL);
 //	ID_CAN_Receiver 	= osThreadCreate(osThread (Thread_CAN_Receiver)		,NULL);
   
@@ -238,15 +236,14 @@ void Thread_CAN_Transmiter()
 		
 		while (1)
 		{
-			LED_Off(3);
-			tx_msg_info.id=ARM_CAN_STANDARD_ID(0x0f6);		//ID=246
+			tx_msg_info.id=ARM_CAN_STANDARD_ID(0x111);		//ID=246
 			tx_msg_info.rtr=0;
-			Driver_CAN2.MessageSend(1,&tx_msg_info,etat_lumiere,2); //envoie 2 donnée
-
-			osSignalWait(0x01, 1000);		// sommeil en attente fin emission
+			etat_lumiere[0]+=1;
+			etat_lumiere[1]+=1;
 			LED_On(3);
-			osDelay(1000);
-
+			Driver_CAN2.MessageSend(2,&tx_msg_info,etat_lumiere,2); //envoie 2 donnée
+			osSignalWait(0x01, osWaitForever);		// sommeil en attente fin emission
+			osDelay(100);
 		}		
 }
 
@@ -261,8 +258,13 @@ void Thread_CAN_Receiver()
 	{		
 		osSignalWait(0x01, osWaitForever);		// sommeil en attente réception
 		
-		Driver_CAN1.MessageRead(0,&rx_msg_info, data_buf,2); //reçoit 1 donnée
+		Driver_CAN2.MessageRead(0,&rx_msg_info, data_buf,2); //reçoit 1 donnée
 		identifiant = rx_msg_info.id;
-		taille=rx_msg_info.dlc;		
+		taille=rx_msg_info.dlc;	
+		LED_On(2);
+		osDelay(1000);
+		LED_Off(2);
+		osDelay(1000);
+
 	}
 }
